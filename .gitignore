@@ -1,8 +1,8 @@
 .vscode/
 /target
 /testapi/target
-/Cargo.lock
 /testapi/Cargo.lock
 /easycookie
 /zip
 /settings.json
+result

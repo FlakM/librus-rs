@@ -1,8 +1,14 @@
-use std::collections::HashMap;
+//! Timetable data types.
+//!
+//! Note: This module is not yet fully implemented in the public API.
+
+#![allow(dead_code)]
+
 use serde::Deserialize;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
-pub struct TimetableLesson{
+pub struct TimetableLesson {
     #[serde(rename = "Id")]
     pub id: String,
     #[serde(rename = "Url")]
@@ -10,7 +16,7 @@ pub struct TimetableLesson{
 }
 
 #[derive(Debug, Deserialize)]
-pub struct TimetableClassroom{
+pub struct TimetableClassroom {
     #[serde(rename = "Id")]
     pub id: i32,
     #[serde(rename = "Url")]
@@ -18,7 +24,7 @@ pub struct TimetableClassroom{
 }
 
 #[derive(Debug, Deserialize)]
-pub struct TimetableEntry{
+pub struct TimetableEntry {
     #[serde(rename = "Id")]
     pub id: String,
     #[serde(rename = "Url")]
@@ -26,7 +32,7 @@ pub struct TimetableEntry{
 }
 
 #[derive(Debug, Deserialize)]
-pub struct TimetableLessonSubject{
+pub struct TimetableLessonSubject {
     #[serde(rename = "Id")]
     pub id: String,
     #[serde(rename = "Name")]
@@ -38,7 +44,7 @@ pub struct TimetableLessonSubject{
 }
 
 #[derive(Debug, Deserialize)]
-pub struct TimetableTeacher{
+pub struct TimetableTeacher {
     #[serde(rename = "Id")]
     pub id: String,
     #[serde(rename = "FirstName")]
@@ -50,7 +56,7 @@ pub struct TimetableTeacher{
 }
 
 #[derive(Debug, Deserialize)]
-pub struct TimetableClass{
+pub struct TimetableClass {
     #[serde(rename = "Id")]
     pub id: String,
     #[serde(rename = "Url")]
@@ -58,53 +64,19 @@ pub struct TimetableClass{
 }
 
 #[derive(Deserialize, Debug)]
-// #[serde(rename_all = "PascalCase")]
-pub struct TimetableDay{
+pub struct TimetableDay {
     #[serde(rename = "Lesson")]
     pub lesson: Option<TimetableLesson>,
-    // pub classroom: Option<TimetableLesson>,
-    // pub date_from: Option<String>,
-    // pub date_to: Option<String>,
-    // pub lesson_no: Option<String>,
-    // pub timetable_entry: Option<TimetableLesson>,
-    // pub day_no: Option<String>,
-    // pub subject: Option<TimetableLessonSubject>,
-    // pub teacher: Option<TimetableTeacher>,
-    // pub class: Option<TimetableClassroom>,
-    // pub is_substitution_class: Option<bool>,
-    // pub is_canceled: Option<bool>,
-    // pub substitution_note: Option<serde_json::Value>,
-    // pub hour_from: Option<String>,
-    // pub hour_to: Option<String>,
-    // pub org_classroom: Option<TimetableLesson>,
-    // pub org_date: Option<String>,
-    // pub org_lesson_no: Option<String>,
-    // pub org_lesson: Option<TimetableLesson>,
-    // pub org_subject: Option<TimetableLesson>,
-    // pub org_teacher: Option<TimetableLesson>,
-    // pub org_hour_from: Option<String>,
-    // pub org_hour_to: Option<String>,
-    // pub substitution_class_url: Option<String>,
-    // pub new_date: Option<String>,
-    // pub new_lesson_no: Option<String>,
-    // pub new_lesson: Option<TimetableLesson>,
-    // pub new_subject: Option<TimetableLesson>,
-    // pub new_teacher: Option<TimetableLesson>,
-    // pub new_hour_from: Option<String>,
-    // pub new_hour_to: Option<String>,
-    // pub virtual_class: Option<TimetableClassroom>,
-    // pub virtual_class_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
 #[serde(rename = "Timetable")]
 pub struct Timetable {
     pub timetable: Option<HashMap<String, Vec<Vec<TimetableDay>>>>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct TimetablePages{
+pub struct TimetablePages {
     #[serde(rename = "Next")]
     pub next: String,
     #[serde(rename = "Prev")]
@@ -112,13 +84,13 @@ pub struct TimetablePages{
 }
 
 #[derive(Debug, Deserialize)]
-pub struct TimetablesUrl{
+pub struct TimetablesUrl {
     #[serde(rename = "Url")]
     pub url: String,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct TimetableResources{
+pub struct TimetableResources {
     #[serde(rename = "Timetables\\IndividualLearningPath")]
     pub individual_learning_path: TimetablesUrl,
     #[serde(rename = "Timetables\\OneToOneLearningPlan")]
@@ -129,7 +101,6 @@ pub struct TimetableResources{
     pub root: TimetablesUrl,
 }
 
-
 #[derive(Debug, Deserialize)]
 pub struct ResponseTimetable {
     #[serde(rename = "Timetable")]
@@ -139,5 +110,5 @@ pub struct ResponseTimetable {
     #[serde(rename = "Resources")]
     pub resources: TimetableResources,
     #[serde(rename = "Url")]
-    pub url: String
+    pub url: String,
 }

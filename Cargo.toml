@@ -1,14 +1,19 @@
 [package]
-name = "librus-api"
-description = "Login API for Librus Synergia"
+name = "librus-rs"
+description = "Rust client for Librus Synergia - the Polish school diary system"
 license = "MIT"
-version = "1.0.2"
+version = "2.0.0"
 edition = "2021"
+repository = "https://github.com/flakm/librus-api"
+documentation = "https://docs.rs/librus-rs"
+keywords = ["librus", "synergia", "school", "api", "client"]
+categories = ["api-bindings"]
 
 
 [dependencies]
-reqwest = { version = "0.11", features = ["json", "native-tls", "cookies", "stream"]}
-tokio = { version = "1.12.0", features = ["full"] } # for our async runtime
-serde = { version = "1.0.190", features = ["derive"] }
-easycookie = "1.0.2"
-serde_json = "1.0.108"
+reqwest = { version = "0.13", features = ["json", "native-tls", "cookies", "stream", "form"] }
+tokio = { version = "1.49", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+base64 = "0.22"
