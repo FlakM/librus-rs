@@ -91,6 +91,7 @@
 //! | [`Client::attendances()`] | All attendances |
 //! | [`Client::attendance_types()`] | Attendance types |
 //! | [`Client::homeworks()`] | All homeworks |
+//! | [`Client::school_notices()`] | School notices (announcements) |
 //! | [`Client::user()`] | User by ID |
 //! | [`Client::current_user()`] | Current user details |
 //!
@@ -130,6 +131,7 @@ mod structs;
 use reqwest::Client as HttpClient;
 
 pub use crate::error::Error;
+pub use crate::structs::announcements::{ResponseSchoolNotices, SchoolNotice};
 pub use crate::structs::events::{Homework, ResponseHomeworks};
 pub use crate::structs::grades::{
     Grade, GradeCategory, GradeComment, ResponseGrades, ResponseGradesCategories,
@@ -728,6 +730,36 @@ impl Client {
         })
     }
 
+    /// Gets school notices (announcements).
+    ///
+    /// Returns a list of school notices.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails or response parsing fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use librus_rs::Client;
+    ///
+    /// # async fn example() -> Result<(), librus_rs::Error> {
+    /// let client = Client::from_env().await?;
+    /// let notices = client.school_notices().await?;
+    /// for notice in notices.school_notices {
+    ///     println!("{}: {}", notice.creation_date, notice.subject);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn school_notices(&self) -> Result<ResponseSchoolNotices> {
+        let json = self.get_api("SchoolNotices").await?;
+        serde_json::from_str(&json).map_err(|e| Error::Parse {
+            source: e,
+            body: json,
+        })
+    }
+
     /// Gets a user by ID.
     ///
     /// Users include teachers, students, and parents.
@@ -996,6 +1028,45 @@ impl Client {
             .ok()
             .and_then(|bytes| String::from_utf8(bytes).ok())
     }
+
+    /// Formats API-provided HTML content into readable text.
+    ///
+    /// School notices (announcements) are often HTML-formatted. This helper removes tags
+    /// and performs a minimal entity decode to make the content readable.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use librus_rs::Client;
+    ///
+    /// let html = "<p>Hello&nbsp;<b>World</b> &amp; friends</p>";
+    /// let text = Client::notice_content_to_text(html);
+    /// assert_eq!(text, "Hello World & friends");
+    /// ```
+    pub fn notice_content_to_text(content: &str) -> String {
+        let mut out = String::with_capacity(content.len());
+        let mut in_tag = false;
+
+        for ch in content.chars() {
+            match ch {
+                '<' => in_tag = true,
+                '>' => in_tag = false,
+                _ if !in_tag => out.push(ch),
+                _ => {}
+            }
+        }
+
+        // Minimal entity decoding for common cases.
+        let out = out
+            .replace("&nbsp;", " ")
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'");
+
+        out.trim().to_string()
+    }
 }
 
 #[cfg(test)]
@@ -1014,5 +1085,12 @@ mod tests {
     fn test_decode_invalid_content() {
         let decoded = Client::decode_message_content("not valid base64!!!");
         assert!(decoded.is_none());
+    }
+
+    #[test]
+    fn test_notice_content_to_text() {
+        let html = "<p>Hello&nbsp;<b>World</b> &amp; friends</p>";
+        let text = Client::notice_content_to_text(html);
+        assert_eq!(text, "Hello World & friends");
     }
 }

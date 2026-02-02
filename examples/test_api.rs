@@ -27,6 +27,11 @@ async fn main() -> Result<(), librus_rs::Error> {
     let attendances = client.attendances().await?;
     println!("Total attendances: {}", attendances.attendances.len());
 
+    // Test School Notices (Announcements)
+    println!("\n--- School Notices ---");
+    let notices = client.school_notices().await?;
+    println!("Total notices: {}", notices.school_notices.len());
+
     // Test Messages API
     println!("\n--- Messages ---");
     let unread = client.unread_counts().await?;

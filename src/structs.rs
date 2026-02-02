@@ -1,6 +1,7 @@
 //! Data types for Librus API responses.
 
 pub mod events;
+pub mod announcements;
 pub mod grades;
 pub mod lessons;
 pub mod me;

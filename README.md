@@ -37,6 +37,14 @@ async fn main() -> Result<(), librus_rs::Error> {
         println!("{}: {}", msg.sender_name, msg.topic);
     }
 
+    // Fetch school notices (announcements)
+    let notices = client.school_notices().await?;
+    for notice in notices.school_notices {
+        let content = Client::notice_content_to_text(&notice.content);
+        let preview: String = content.chars().take(80).collect();
+        println!("{}: {}", notice.subject, preview);
+    }
+
     Ok(())
 }
 ```
@@ -79,6 +87,7 @@ Base URL: `https://synergia.librus.pl/gateway/api/2.0/`
 | `attendances()` | Get all attendances |
 | `attendance_types()` | Get attendance types |
 | `homeworks()` | Get all homeworks |
+| `school_notices()` | Get school notices (announcements) |
 | `user(id)` | Get user by ID |
 | `current_user()` | Get current user details |
 
@@ -94,6 +103,7 @@ Base URL: `https://wiadomosci.librus.pl/api/`
 | `message(id)` | Get full message details |
 | `attachment(attachment_id, message_id)` | Download attachment as bytes |
 | `decode_message_content(base64)` | Decode base64 message content to string |
+| `notice_content_to_text(html)` | Convert API-provided notice HTML to text |
 
 ## Error Handling
 
@@ -133,6 +143,9 @@ pub use librus_rs::{
 
     // Homework
     Homework, ResponseHomeworks,
+
+    // School notices (announcements)
+    SchoolNotice, ResponseSchoolNotices,
 
     // Messages
     InboxMessage, OutboxMessage, MessageDetail, Attachment, UnreadCounts,
