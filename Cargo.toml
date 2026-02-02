@@ -2,7 +2,7 @@
 name = "librus-rs"
 description = "Rust client for Librus Synergia - the Polish school diary system"
 license = "MIT"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2021"
 repository = "https://github.com/flakm/librus-api"
 documentation = "https://docs.rs/librus-rs"
