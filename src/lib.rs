@@ -378,7 +378,7 @@ impl Client {
             .await
             .map_err(Error::Request)?;
 
-        http.get(AUTH_GRANT_URL)
+        http.post(AUTH_GRANT_URL)
             .send()
             .await
             .map_err(Error::Request)?;
