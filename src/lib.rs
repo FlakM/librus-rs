@@ -160,7 +160,6 @@ const MESSAGES_API_BASE: &str = "https://wiadomosci.librus.pl/api/";
 const AUTH_URL: &str = "https://api.librus.pl/OAuth/Authorization?client_id=46";
 const AUTH_TEST_URL: &str =
     "https://api.librus.pl/OAuth/Authorization?client_id=46&response_type=code&scope=mydata";
-const AUTH_GRANT_URL: &str = "https://api.librus.pl/OAuth/Authorization/Grant?client_id=46";
 const TOKEN_INFO_URL: &str = "https://synergia.librus.pl/gateway/api/2.0/Auth/TokenInfo/";
 const MESSAGES_INIT_URL: &str = "https://synergia.librus.pl/wiadomosci3";
 
@@ -372,13 +371,20 @@ impl Client {
             .await
             .map_err(Error::Request)?;
 
-        http.post(AUTH_URL)
+        let login_response = http
+            .post(AUTH_URL)
             .form(&form_params)
             .send()
             .await
             .map_err(Error::Request)?;
 
-        http.post(AUTH_GRANT_URL)
+        let login_json: serde_json::Value = login_response.json().await.map_err(|_| Error::Authentication)?;
+        let go_to = login_json["goTo"]
+            .as_str()
+            .ok_or(Error::Authentication)?;
+
+        let redirect_url = format!("https://api.librus.pl{go_to}");
+        http.get(&redirect_url)
             .send()
             .await
             .map_err(Error::Request)?;
