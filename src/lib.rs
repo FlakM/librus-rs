@@ -158,8 +158,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 const SYNERGIA_API_BASE: &str = "https://synergia.librus.pl/gateway/api/2.0/";
 const MESSAGES_API_BASE: &str = "https://wiadomosci.librus.pl/api/";
 const AUTH_URL: &str = "https://api.librus.pl/OAuth/Authorization?client_id=46";
-const AUTH_TEST_URL: &str =
-    "https://api.librus.pl/OAuth/Authorization?client_id=46&response_type=code&scope=mydata";
+const PORTAL_RODZINA_URL: &str = "https://synergia.librus.pl/loguj/portalRodzina";
 const TOKEN_INFO_URL: &str = "https://synergia.librus.pl/gateway/api/2.0/Auth/TokenInfo/";
 const MESSAGES_INIT_URL: &str = "https://synergia.librus.pl/wiadomosci3";
 
@@ -364,13 +363,19 @@ impl Client {
             .build()
             .map_err(Error::HttpClient)?;
 
-        let form_params = [("action", "login"), ("login", username), ("pass", password)];
-
-        http.get(AUTH_TEST_URL)
+        // Initiate OAuth flow from synergia to set oauth_state cookie and prime the session.
+        // The redirect chain lands on the api.librus.pl login form.
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let init_url = format!("{PORTAL_RODZINA_URL}?v={timestamp}");
+        http.get(&init_url)
             .send()
             .await
             .map_err(Error::Request)?;
 
+        let form_params = [("action", "login"), ("login", username), ("pass", password)];
         let login_response = http
             .post(AUTH_URL)
             .form(&form_params)
@@ -383,6 +388,8 @@ impl Client {
             .as_str()
             .ok_or(Error::Authentication)?;
 
+        // Follow 2FA → PerformLogin → Grant → portalRodzina?code=&state= chain.
+        // The final portalRodzina response sets oauth_token, activating the session.
         let redirect_url = format!("https://api.librus.pl{go_to}");
         http.get(&redirect_url)
             .send()
