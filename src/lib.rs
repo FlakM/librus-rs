@@ -146,6 +146,11 @@ pub use crate::structs::me::{Me, ResponseMe};
 pub use crate::structs::messages::{
     Attachment, InboxMessage, MessageDetail, OutboxMessage, UnreadCounts,
 };
+pub use crate::structs::text_grades::{
+    DescriptiveGradeSkill, ResponseDescriptiveGradeSkill, ResponseDescriptiveGradeSkills,
+    ResponseTextGradeCategories, ResponseTextGradeCategory, ResponseTextGrades, TextGrade,
+    TextGradeCategory, TextGradeRef,
+};
 pub use crate::structs::users::{ResponseUser, User};
 
 use crate::structs::messages::{
@@ -370,10 +375,7 @@ impl Client {
             .unwrap_or_default()
             .as_secs();
         let init_url = format!("{PORTAL_RODZINA_URL}?v={timestamp}");
-        http.get(&init_url)
-            .send()
-            .await
-            .map_err(Error::Request)?;
+        http.get(&init_url).send().await.map_err(Error::Request)?;
 
         let form_params = [("action", "login"), ("login", username), ("pass", password)];
         let login_response = http
@@ -383,10 +385,11 @@ impl Client {
             .await
             .map_err(Error::Request)?;
 
-        let login_json: serde_json::Value = login_response.json().await.map_err(|_| Error::Authentication)?;
-        let go_to = login_json["goTo"]
-            .as_str()
-            .ok_or(Error::Authentication)?;
+        let login_json: serde_json::Value = login_response
+            .json()
+            .await
+            .map_err(|_| Error::Authentication)?;
+        let go_to = login_json["goTo"].as_str().ok_or(Error::Authentication)?;
 
         // Follow 2FA → PerformLogin → Grant → portalRodzina?code=&state= chain.
         // The final portalRodzina response sets oauth_token, activating the session.
@@ -584,6 +587,200 @@ impl Client {
     /// ```
     pub async fn grade_comment(&self, id: i32) -> Result<ResponseGradesComments> {
         let json = self.get_api(&format!("Grades/Comments/{}", id)).await?;
+        serde_json::from_str(&json).map_err(|e| Error::Parse {
+            source: e,
+            body: json,
+        })
+    }
+
+    /// Gets all text (descriptive) grades for the student.
+    ///
+    /// Combines both flavours of text grades in a single response:
+    ///
+    /// * "oceny bieżące" carrying a [`TextGrade::category`], and
+    /// * "oceny kształtujące" carrying a [`TextGrade::skill`].
+    ///
+    /// This is the preferred endpoint when observing new text grades, because
+    /// it avoids querying [`Client::text_grades`] and
+    /// [`Client::descriptive_text_grades`] separately.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request fails or response parsing fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use librus_rs::Client;
+    ///
+    /// # async fn example() -> Result<(), librus_rs::Error> {
+    /// let client = Client::from_env().await?;
+    /// for grade in client.base_text_grades().await?.grades {
+    ///     println!("{}: {}", grade.date, grade.grade);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn base_text_grades(&self) -> Result<ResponseTextGrades> {
+        let json = self.get_api("BaseTextGrades").await?;
+        serde_json::from_str(&json).map_err(|e| Error::Parse {
+            source: e,
+            body: json,
+        })
+    }
+
+    /// Gets text grades that belong to a category ("oceny bieżące").
+    ///
+    /// Use [`Client::base_text_grades`] when you need every text grade.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use librus_rs::Client;
+    ///
+    /// # async fn example() -> Result<(), librus_rs::Error> {
+    /// let client = Client::from_env().await?;
+    /// for grade in client.text_grades().await?.grades {
+    ///     println!("{}: {}", grade.date, grade.grade);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn text_grades(&self) -> Result<ResponseTextGrades> {
+        let json = self.get_api("TextGrades").await?;
+        serde_json::from_str(&json).map_err(|e| Error::Parse {
+            source: e,
+            body: json,
+        })
+    }
+
+    /// Gets text grades tied to a skill ("oceny kształtujące").
+    ///
+    /// Use [`Client::base_text_grades`] when you need every text grade.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use librus_rs::Client;
+    ///
+    /// # async fn example() -> Result<(), librus_rs::Error> {
+    /// let client = Client::from_env().await?;
+    /// for grade in client.descriptive_text_grades().await?.grades {
+    ///     println!("{}: {}", grade.date, grade.grade);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn descriptive_text_grades(&self) -> Result<ResponseTextGrades> {
+        let json = self.get_api("DescriptiveTextGrades").await?;
+        serde_json::from_str(&json).map_err(|e| Error::Parse {
+            source: e,
+            body: json,
+        })
+    }
+
+    /// Gets all category-based text grade categories.
+    ///
+    /// The returned list is small and stable, so prefer it over calling
+    /// [`Client::text_grade_category`] once per grade.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use librus_rs::Client;
+    ///
+    /// # async fn example() -> Result<(), librus_rs::Error> {
+    /// let client = Client::from_env().await?;
+    /// for category in client.text_grade_categories().await?.categories {
+    ///     println!("{}: {}", category.id, category.name);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn text_grade_categories(&self) -> Result<ResponseTextGradeCategories> {
+        let json = self.get_api("TextGrades/Categories").await?;
+        serde_json::from_str(&json).map_err(|e| Error::Parse {
+            source: e,
+            body: json,
+        })
+    }
+
+    /// Gets a single category-based text grade category by ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The category ID from a [`TextGrade`]'s `category` field
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use librus_rs::Client;
+    ///
+    /// # async fn example() -> Result<(), librus_rs::Error> {
+    /// let client = Client::from_env().await?;
+    /// let category = client.text_grade_category(90126).await?;
+    /// println!("Category: {}", category.category.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn text_grade_category(&self, id: i32) -> Result<ResponseTextGradeCategory> {
+        let json = self
+            .get_api(&format!("TextGrades/Categories/{}", id))
+            .await?;
+        serde_json::from_str(&json).map_err(|e| Error::Parse {
+            source: e,
+            body: json,
+        })
+    }
+
+    /// Gets all descriptive skills used by "oceny kształtujące".
+    ///
+    /// The returned list is small and stable, so prefer it over calling
+    /// [`Client::descriptive_grade_skill`] once per grade.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use librus_rs::Client;
+    ///
+    /// # async fn example() -> Result<(), librus_rs::Error> {
+    /// let client = Client::from_env().await?;
+    /// for skill in client.descriptive_grade_skills().await?.skills {
+    ///     println!("{}: {}", skill.id, skill.name);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn descriptive_grade_skills(&self) -> Result<ResponseDescriptiveGradeSkills> {
+        let json = self.get_api("DescriptiveTextGrades/Skills").await?;
+        serde_json::from_str(&json).map_err(|e| Error::Parse {
+            source: e,
+            body: json,
+        })
+    }
+
+    /// Gets a single descriptive skill by ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The skill ID from a [`TextGrade`]'s `skill` field
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use librus_rs::Client;
+    ///
+    /// # async fn example() -> Result<(), librus_rs::Error> {
+    /// let client = Client::from_env().await?;
+    /// let skill = client.descriptive_grade_skill(783797).await?;
+    /// println!("Skill: {}", skill.skill.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn descriptive_grade_skill(&self, id: i32) -> Result<ResponseDescriptiveGradeSkill> {
+        let json = self
+            .get_api(&format!("DescriptiveTextGrades/Skills/{}", id))
+            .await?;
         serde_json::from_str(&json).map_err(|e| Error::Parse {
             source: e,
             body: json,

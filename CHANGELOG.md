@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Text grade support: `base_text_grades`, `text_grades`,
+  `descriptive_text_grades`, `text_grade_categories`, `text_grade_category`,
+  `descriptive_grade_skills` and `descriptive_grade_skill`, with fully typed
+  `TextGrade`, `TextGradeCategory` and `DescriptiveGradeSkill` models.
+
 ## [2.0.1](https://github.com/FlakM/librus-rs/compare/v2.0.0...v2.0.1) - 2026-02-02
 
 ### Other
