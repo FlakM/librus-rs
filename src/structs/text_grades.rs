@@ -14,7 +14,7 @@
 
 use serde::Deserialize;
 
-use crate::serde_helpers::string_or_int;
+use crate::serde_helpers::string_or_int_opt;
 
 /// A reference to another grade-related resource.
 #[derive(Debug, Deserialize)]
@@ -97,12 +97,13 @@ pub struct TextGradeCategory {
     pub color: TextGradeRef,
     /// Category name (e.g. `aktywność`).
     pub name: String,
-    /// Short category code (e.g. `akt`).
-    pub short: String,
+    /// Short category code (e.g. `akt`). Not set on every category.
+    pub short: Option<String>,
     /// Display weight of the category, sent as a number or a string.
-    #[serde(deserialize_with = "string_or_int")]
-    pub weight: String,
+    #[serde(default, deserialize_with = "string_or_int_opt")]
+    pub weight: Option<String>,
     /// Whether the category counts towards the average.
+    #[serde(default)]
     pub count_to_the_average: bool,
 }
 
@@ -133,15 +134,17 @@ pub struct DescriptiveGradeSkill {
     /// Unique skill identifier.
     pub id: i64,
     /// Colour used to display the skill.
-    pub colors: TextGradeRef,
+    #[serde(rename = "Color")]
+    pub color: TextGradeRef,
     /// Skill name (e.g. `Czytanie`).
     pub name: String,
     /// Reference to the subject this skill belongs to.
     pub subject: TextGradeRef,
     /// Display weight of the skill, sent as a number or a string.
-    #[serde(deserialize_with = "string_or_int")]
-    pub weight: String,
+    #[serde(default, deserialize_with = "string_or_int_opt")]
+    pub weight: Option<String>,
     /// Whether the skill counts towards the average.
+    #[serde(default)]
     pub count_to_the_average: bool,
 }
 
@@ -222,12 +225,21 @@ mod tests {
                     "Short": "akt",
                     "Weight": 3,
                     "CountToTheAverage": true
+                },
+                {
+                    "Id": 90127,
+                    "Color": {"Id": 7, "Url": "https://api.librus.pl/2.0/Colors/7"},
+                    "Name": "inna",
+                    "CountToTheAverage": true
                 }
             ],
             "Url": "https://api.librus.pl/2.0/TextGrades/Categories"
         }"#;
         let response: ResponseTextGradeCategories = serde_json::from_str(json).unwrap();
-        assert_eq!(response.categories[0].weight, "3");
+        assert_eq!(response.categories[0].weight.as_deref(), Some("3"));
+        assert_eq!(response.categories[0].short.as_deref(), Some("akt"));
+        assert!(response.categories[1].weight.is_none());
+        assert!(response.categories[1].short.is_none());
     }
 
     #[test]
@@ -236,7 +248,7 @@ mod tests {
             "Skills": [
                 {
                     "Id": 783797,
-                    "Colors": {"Id": 1, "Url": "https://api.librus.pl/2.0/Colors/1"},
+                    "Color": {"Id": 1, "Url": "https://api.librus.pl/2.0/Colors/1"},
                     "Name": "Czytanie",
                     "Weight": "1",
                     "CountToTheAverage": false,
@@ -247,6 +259,6 @@ mod tests {
         }"#;
         let response: ResponseDescriptiveGradeSkills = serde_json::from_str(json).unwrap();
         assert_eq!(response.skills[0].name, "Czytanie");
-        assert_eq!(response.skills[0].weight, "1");
+        assert_eq!(response.skills[0].weight.as_deref(), Some("1"));
     }
 }
