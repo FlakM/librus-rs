@@ -16,6 +16,10 @@ use serde::Deserialize;
 
 use crate::serde_helpers::string_or_int_opt;
 
+fn default_true() -> bool {
+    true
+}
+
 /// A reference to another grade-related resource.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -59,7 +63,7 @@ pub struct TextGrade {
     /// Semester number (1 or 2).
     pub semester: i64,
     /// Whether the grade is visible in the student's grades view.
-    #[serde(default)]
+    #[serde(default = "default_true")]
     pub show_in_grades_view: bool,
     /// Whether this is a semester grade. Only present on `TextGrades`.
     #[serde(default)]
@@ -186,8 +190,7 @@ mod tests {
                     "Grade": "Bardzo aktywna na lekcji.",
                     "Date": "2026-10-02",
                     "AddDate": "2026-10-05 10:19:05",
-                    "Semester": 1,
-                    "ShowInGradesView": true
+                    "Semester": 1
                 },
                 {
                     "Id": 15932,
@@ -212,6 +215,8 @@ mod tests {
         assert!(response.grades[0].skill.is_none());
         assert_eq!(response.grades[1].skill.as_ref().unwrap().id, 783797);
         assert!(response.grades[1].category.is_none());
+        // Missing ShowInGradesView must stay visible, not silently hide a grade.
+        assert!(response.grades[0].show_in_grades_view);
     }
 
     #[test]
